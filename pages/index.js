@@ -120,6 +120,7 @@ export default class Index extends Component {
 
     return (
       <div>
+        <h1><em>bricolage</em></h1>
         {user ? (
           <button onClick={this.handleLogout}>Logout</button>
         ) : (
