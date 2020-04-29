@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import firebase from 'firebase/app'
+import 'firebase/storage'
 import 'firebase/auth'
 import 'firebase/firestore'
 import 'isomorphic-unfetch'
@@ -26,12 +27,27 @@ export default class Index extends Component {
       user: this.props.user,
       value: '',
       messages: this.props.messages,
+      img: '',
+      imgDownLoaded: true,
     }
 
     this.addDbListener = this.addDbListener.bind(this)
     this.removeDbListener = this.removeDbListener.bind(this)
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
+  }
+
+  uploadImg = e => {
+    console.log('Called');
+    const file = this.fileInput.files[0]
+    console.log('file', file, file.name)
+    this.setState({imgDownLoaded: false});
+
+    firebase.storage().ref().child(`images/${file.name}`).put(file).then(s=>{
+      firebase.storage().ref().child(`images/${file.name}`).getDownloadURL().then(url=>{
+        this.setState({img: url, imgDownLoaded: true});
+      })
+    })
   }
 
   componentDidMount() {
@@ -142,6 +158,8 @@ export default class Index extends Component {
                   <li key={key}>{messages[key].text}</li>
                 ))}
             </ul>
+            <input accept='image/*' multiple type='file' onChange={this.uploadImg} ref={ el => this.fileInput = el }/>
+            <img style={{display:'block'}} src={this.state.img} />
           </div>
         )}
       </div>
