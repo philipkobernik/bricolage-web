@@ -6,7 +6,7 @@ import 'firebase/firestore'
 import 'isomorphic-unfetch'
 import clientCredentials from '../credentials/client'
 
-import ListMessages from '../components/ListMessages'
+import ProjectsList from '../components/ProjectsList'
 import CurrentUser from '../components/CurrentUser'
 
 export async function getServerSideProps({ req, query }) {
@@ -89,7 +89,7 @@ class Index extends Component {
         {firebase.apps.length > 0 && // whats the right way to do this?
         <>
           <CurrentUser fb={firebase} />
-          <ListMessages fb={firebase} />
+          <ProjectsList fb={firebase} />
         </>
         }
       </div>
