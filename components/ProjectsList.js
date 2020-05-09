@@ -1,5 +1,6 @@
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useDownloadURL } from 'react-firebase-hooks/storage';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 import { useState } from 'react'
 
@@ -42,34 +43,14 @@ const AddProject = ({fb}) => {
 
 const ProjectListItem = ({doc, fb}) => {
 
-  const [imageUrls, setImageUrls] = useState([]);
+  const [imageUrls, loading, error] = useCollection(
+    fb.firestore().collection(`projects/${doc.id}/imageUrls`), {}
+  );
 
 
   const onEdit = (event) => {
     console.log('edit')
   }
-
-  const storageRef = fb.storage().ref(`images/${doc.id}`);
-
-  storageRef.listAll().then(function(result) {
-    result.items.forEach(function(imageRef) {
-      // And finally display them
-      //displayImage(imageRef);
-      imageRef.getDownloadURL().then(function(url) {
-        // TODO: Display the image on the UI
-        //setImageUrls(imageUrls => [...imageUrls, url])
-        setImageUrls(imageUrls => (
-          Array.from(new Set([...imageUrls, url]))
-        ))
-      }).catch(function(error) {
-        // Handle any errors
-        console.log('err', error);
-      });
-    });
-  }).catch(function(error) {
-    // Handle any errors
-    console.log('list_all err', error);
-  });
 
   const onDelete = (event) => {
     console.log('attempt delete')
@@ -102,6 +83,11 @@ const ProjectListItem = ({doc, fb}) => {
           .then(url=>{
             console.log('file upload success');
             //this.setState({img: url, imgDownLoaded: true});
+            fb.firestore()
+              .collection(`projects/${doc.id}/imageUrls`)
+              .add({
+                url: url
+              })
           })
       })
   }
@@ -122,12 +108,13 @@ const ProjectListItem = ({doc, fb}) => {
       />	
 
       <ul>
-        {
-          imageUrls.map(url => (
-            <li key={url}>
-              <img src={url} />
+        {imageUrls && (
+          imageUrls.docs.map(doc => (
+            <li key={doc.id}>
+              <img src={doc.data().url} />
             </li>
           ))
+        )
         }
       </ul>
     </li>
@@ -135,6 +122,8 @@ const ProjectListItem = ({doc, fb}) => {
 }
 
 const ProjectsList = ({fb}) => {
+
+  //const [user, initialising, authError] = useAuthState(fb.auth());
   const [projects, loading, error] = useCollection(
     fb.firestore().collection('projects'), {}
   );
@@ -149,7 +138,7 @@ const ProjectsList = ({fb}) => {
             Collection:{' '}
             <ul>
             {projects.docs.map(doc => (
-              <ProjectListItem doc={doc} fb={fb} />
+              <ProjectListItem key={doc.id} doc={doc} fb={fb} />
             ))}
             </ul>
           </>

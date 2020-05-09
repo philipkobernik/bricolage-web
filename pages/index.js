@@ -68,7 +68,6 @@ class Index extends Component {
         {firebase.apps.length > 0 && // whats the right way to do this?
         <>
           <CurrentUser fb={firebase} />
-          <ProjectsList fb={firebase} />
         </>
         }
       </div>

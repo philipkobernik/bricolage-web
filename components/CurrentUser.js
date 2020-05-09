@@ -1,5 +1,7 @@
 import { useAuthState } from 'react-firebase-hooks/auth';
 
+import ProjectsList from './ProjectsList'
+
 const CurrentUser = ({fb}) => {
   const [user, initialising, error] = useAuthState(fb.auth());
   const login = () => {
@@ -30,6 +32,8 @@ const CurrentUser = ({fb}) => {
       <div>
         <p>Current User: {user.email}</p>
         <button onClick={logout}>Log out</button>
+
+        <ProjectsList fb={fb} />
       </div>
     );
   }
