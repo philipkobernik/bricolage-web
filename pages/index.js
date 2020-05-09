@@ -35,27 +35,6 @@ class Index extends Component {
     }
   }
 
-  uploadImg = e => {
-    const file = this.fileInput.files[0]
-    console.log('file', file, file.name)
-    this.setState({imgDownLoaded: false});
-
-    firebase.storage()
-      .ref()
-      .child(`images/${this.state.user.uid}/${file.name}`)
-      .put(file)
-      .then(s=>{
-        firebase.storage()
-          .ref()
-          .child(`images/${this.state.user.uid}/${file.name}`)
-          .getDownloadURL()
-          .then(url=>{
-            console.log('file upload success');
-            this.setState({img: url, imgDownLoaded: true});
-          })
-      })
-  }
-
   componentDidMount() {
     console.log("index cDM");
     firebase.initializeApp(clientCredentials)
