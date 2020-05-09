@@ -1,4 +1,6 @@
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { useDownloadURL } from 'react-firebase-hooks/storage';
+
 import { useState } from 'react'
 
 function useInput({ type /*...*/ }) {
@@ -20,9 +22,8 @@ const AddProject = ({fb}) => {
     const date = new Date().getTime()
     console.log(user)
     db.collection('projects')
-      .doc()
-      .set({
-        id: date,
+      .add({
+        createdAt: date,
         name: name,
         artist: user.uid,
         artistName: user.displayName
@@ -40,9 +41,36 @@ const AddProject = ({fb}) => {
 }
 
 const ProjectListItem = ({doc, fb}) => {
+
+  const [imageUrls, setImageUrls] = useState([]);
+
+
   const onEdit = (event) => {
     console.log('edit')
   }
+
+  const storageRef = fb.storage().ref(`images/${doc.id}`);
+
+  storageRef.listAll().then(function(result) {
+    result.items.forEach(function(imageRef) {
+      // And finally display them
+      //displayImage(imageRef);
+      imageRef.getDownloadURL().then(function(url) {
+        // TODO: Display the image on the UI
+        //setImageUrls(imageUrls => [...imageUrls, url])
+        setImageUrls(imageUrls => (
+          Array.from(new Set([...imageUrls, url]))
+        ))
+      }).catch(function(error) {
+        // Handle any errors
+        console.log('err', error);
+      });
+    });
+  }).catch(function(error) {
+    // Handle any errors
+    console.log('list_all err', error);
+  });
+
   const onDelete = (event) => {
     console.log('attempt delete')
     fb.firestore()
@@ -55,6 +83,30 @@ const ProjectListItem = ({doc, fb}) => {
         console.error("delete error!", error);
       });
   }
+
+  const uploadImg = e => {
+    const file = e.target.files[0]
+    console.log('file', file, file.name)
+    //this.setState({imgDownLoaded: false});
+
+    fb.storage()
+      .ref()
+      //.child(`images/${this.state.user.uid}/${file.name}`)
+      .child(`images/${doc.id}/${file.name}`)
+      .put(file)
+      .then(s=>{
+        fb.storage()
+          .ref()
+          .child(`images/${doc.id}/${file.name}`)
+          .getDownloadURL()
+          .then(url=>{
+            console.log('file upload success');
+            //this.setState({img: url, imgDownLoaded: true});
+          })
+      })
+  }
+
+  console.log('render');
   return (
     <li key={doc.id}>
       <em>
@@ -63,6 +115,21 @@ const ProjectListItem = ({doc, fb}) => {
       <br />
       <button onClick={onEdit}>edit</button>
       <button onClick={onDelete}>delete</button>
+      <input accept='image/*'
+        multiple type='file'
+        onChange={uploadImg}
+        /* ref={ el=>this.fileInput = el } */
+      />	
+
+      <ul>
+        {
+          imageUrls.map(url => (
+            <li key={url}>
+              <img src={url} />
+            </li>
+          ))
+        }
+      </ul>
     </li>
   )
 }
