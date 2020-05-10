@@ -1,4 +1,5 @@
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { useDocument } from 'react-firebase-hooks/firestore';
 import { useDownloadURL } from 'react-firebase-hooks/storage';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
@@ -42,10 +43,14 @@ const AddProject = ({fb}) => {
 
 }
 
-const ProjectListItem = ({doc, fb}) => {
+const ProjectListItem = ({projectId, fb}) => {
+
+  const [project, projectLoading, projectError] = useDocument(
+    fb.firestore().doc(`projects/${projectId}`), {}
+  );
 
   const [imageUrls, loading, error] = useCollection(
-    fb.firestore().collection(`projects/${doc.id}/imageUrls`), {}
+    fb.firestore().collection(`projects/${projectId}/imageUrls`), {}
   );
 
 
@@ -57,7 +62,7 @@ const ProjectListItem = ({doc, fb}) => {
     console.log('attempt delete')
     fb.firestore()
       .collection('projects')
-      .doc(doc.id)
+      .doc(projectId)
       .delete()
       .then(function() {
         console.log("delete success");
@@ -74,18 +79,18 @@ const ProjectListItem = ({doc, fb}) => {
     fb.storage()
       .ref()
       //.child(`images/${this.state.user.uid}/${file.name}`)
-      .child(`images/${doc.id}/${file.name}`)
+      .child(`images/${projectId}/${file.name}`)
       .put(file)
       .then(s=>{
         fb.storage()
           .ref()
-          .child(`images/${doc.id}/${file.name}`)
+          .child(`images/${projectId}/${file.name}`)
           .getDownloadURL()
           .then(url=>{
             console.log('file upload success');
             //this.setState({img: url, imgDownLoaded: true});
             fb.firestore()
-              .collection(`projects/${doc.id}/imageUrls`)
+              .collection(`projects/${projectId}/imageUrls`)
               .add({
                 url: url
               })
@@ -93,12 +98,13 @@ const ProjectListItem = ({doc, fb}) => {
       })
   }
 
-  console.log('render');
   return (
-    <li key={doc.id}>
+    <li key={projectId}>
+    { project && (
+      <>
       <em>
-        {doc.data().name}
-      </em>, by {doc.data().artistName}
+        {project.data().name}
+      </em>
       <br />
       <button onClick={onEdit}>edit</button>
       <button onClick={onDelete}>delete</button>
@@ -170,28 +176,31 @@ body {
 }
       `}
       </style>
-    </li>
+      </>)
+    }</li>
   )
 }
 
 const ProjectsList = ({fb}) => {
 
   //const [user, initialising, authError] = useAuthState(fb.auth());
-  const [projects, loading, error] = useCollection(
-    fb.firestore().collection('projects'), {}
+  var user = fb.auth().currentUser;
+
+  const [projectIds, loading, error] = useCollection(
+    fb.firestore().collection(`users/${user.email}/projects`), {} // => collection of references to projects!
   );
 
   return (
     <div>
         {error && <strong>Error: {JSON.stringify(error)}</strong>}
         {loading && <span>Collection: Loading...</span>}
-        {projects && (
+        {projectIds && (
           <>
             <AddProject fb={fb} />
             Collection:{' '}
             <ul>
-            {projects.docs.map(doc => (
-              <ProjectListItem key={doc.id} doc={doc} fb={fb} />
+            {projectIds.docs.map(doc => (
+              <ProjectListItem key={doc.id} projectId={doc.id} fb={fb} />
             ))}
             </ul>
           </>
