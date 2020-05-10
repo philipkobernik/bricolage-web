@@ -31,8 +31,20 @@ const AddProject = ({fb}) => {
         artist: user.uid,
         artistName: user.displayName
       })
+      .then(docRef => {
+        var userRef = db.collection(`users`).doc(user.email);
+        userRef.get().then(userDoc => {
+          if(!userDoc.exists){
+            db.collection(`users`).doc(user.email).set({});
+          }
+        })
+        return docRef;
+      })
+      .then(function(docRef) {
+        db.collection(`users/${user.email}/projects`)
+          .doc(docRef.id).set({})
+      })
     setName('');
-
   }
 
   return <>
@@ -78,7 +90,6 @@ const ProjectListItem = ({projectId, fb}) => {
 
     fb.storage()
       .ref()
-      //.child(`images/${this.state.user.uid}/${file.name}`)
       .child(`images/${projectId}/${file.name}`)
       .put(file)
       .then(s=>{
@@ -88,7 +99,6 @@ const ProjectListItem = ({projectId, fb}) => {
           .getDownloadURL()
           .then(url=>{
             console.log('file upload success');
-            //this.setState({img: url, imgDownLoaded: true});
             fb.firestore()
               .collection(`projects/${projectId}/imageUrls`)
               .add({
