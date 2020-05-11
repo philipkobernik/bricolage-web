@@ -28,8 +28,8 @@ const AddProject = ({fb}) => {
       .add({
         createdAt: date,
         name: name,
-        artist: user.uid,
-        artistName: user.displayName
+        user: user.email,
+        userDisplayName: user.displayName
       })
       .then(docRef => {
         var userRef = db.collection(`users`).doc(user.email);
@@ -48,14 +48,16 @@ const AddProject = ({fb}) => {
   }
 
   return <>
+    <p>Add a project</p>
     <form onSubmit={handleSubmit}>
       {nameInput}
+      <button onClick={handleSubmit}>Add</button>
     </form>
  </>;
 
 }
 
-const ProjectListItem = ({projectId, fb}) => {
+const ProjectListItem = ({projectId, fb, currentUser}) => {
 
   const [project, projectLoading, projectError] = useDocument(
     fb.firestore().doc(`projects/${projectId}`), {}
@@ -65,19 +67,28 @@ const ProjectListItem = ({projectId, fb}) => {
     fb.firestore().collection(`projects/${projectId}/imageUrls`), {}
   );
 
-
   const onEdit = (event) => {
     console.log('edit')
   }
 
   const onDelete = (event) => {
     console.log('attempt delete')
+    const userEmail = currentUser.email;
     fb.firestore()
       .collection('projects')
       .doc(projectId)
       .delete()
       .then(function() {
         console.log("delete success");
+        fb.firestore().collection(`users/${userEmail}/projects`)
+          .doc(projectId)
+          .delete()
+          .then(()=> {
+            console.log("delete index success");
+          }).catch(error => {
+            console.log("delete index error", error);
+          });
+
       }).catch(function(error) {
         console.error("delete error!", error);
       });
@@ -110,7 +121,7 @@ const ProjectListItem = ({projectId, fb}) => {
 
   return (
     <li key={projectId}>
-    { project && (
+    { project && project.data() && (
       <>
       <em>
         {project.data().name}
@@ -206,13 +217,21 @@ const ProjectsList = ({fb}) => {
         {loading && <span>Collection: Loading...</span>}
         {projectIds && (
           <>
-            <AddProject fb={fb} />
-            Collection:{' '}
+            <h3>My Projects:</h3>
             <ul>
             {projectIds.docs.map(doc => (
-              <ProjectListItem key={doc.id} projectId={doc.id} fb={fb} />
+              <ProjectListItem
+                key={doc.id}
+                projectId={doc.id}
+                fb={fb}
+                currentUser={user}
+              />
             ))}
+              <li key="addNewProject">
+                <AddProject fb={fb} />
+              </li>
             </ul>
+
           </>
         )}
     </div>
